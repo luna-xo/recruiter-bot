@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Recruiter Bot</title>
+<style>
+  :root {
+    --bg: #f5f6fa; --panel: #fff; --text: #1a1a2e; --muted: #6b7280; --line: #e3e5ec;
+    --accent: #2f6fed; --good: #15803d; --good-bg: #dcfce7; --bad: #b91c1c; --bad-bg: #fee2e2;
+    --warn: #b45309; --warn-bg: #fef3c7; --grey-bg: #eceef4;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12131a; --panel: #1b1d27; --text: #e8e9f0; --muted: #9aa0b2; --line: #2c2f3d;
+      --accent: #6c9bff; --good: #4ade80; --good-bg: #123524; --bad: #f87171; --bad-bg: #3b1818;
+      --warn: #fbbf24; --warn-bg: #3a2c0b; --grey-bg: #262938;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); }
+  header { padding: 1rem 1.5rem; background: var(--panel); border-bottom: 1px solid var(--line); }
+  header h1 { margin: 0; font-size: 1.3rem; }
+  header p { margin: .2rem 0 0; color: var(--muted); font-size: .9rem; }
+  .layout { display: grid; grid-template-columns: 280px 1fr; gap: 1.2rem; max-width: 1100px; margin: 1.2rem auto; padding: 0 1rem; }
+  @media (max-width: 760px) { .layout { grid-template-columns: 1fr; } }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; }
+  .side { padding: .8rem; align-self: start; }
+  .tabs { display: flex; gap: .4rem; margin-bottom: .6rem; }
+  .tabs button { flex: 1; padding: .5rem; border: 1px solid var(--line); background: var(--grey-bg); color: var(--text); border-radius: 6px; cursor: pointer; font-size: .85rem; }
+  .tabs button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .list { list-style: none; margin: 0; padding: 0; max-height: 70vh; overflow-y: auto; }
+  .list button { width: 100%; text-align: left; padding: .55rem .6rem; border: 0; background: none; color: var(--text); border-radius: 6px; cursor: pointer; font-size: .9rem; }
+  .list button:hover { background: var(--grey-bg); }
+  .list button.active { background: var(--accent); color: #fff; }
+  .list small { display: block; opacity: .75; font-size: .75rem; }
+  .main { display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
+  .subject { padding: 1rem 1.2rem; }
+  .subject h2 { margin: 0 0 .2rem; font-size: 1.15rem; }
+  .subject .tag { color: var(--muted); font-style: italic; margin: 0 0 .7rem; }
+  .facts { display: flex; flex-wrap: wrap; gap: .4rem 1.4rem; font-size: .88rem; margin-bottom: .6rem; }
+  .facts b { color: var(--muted); font-weight: 600; }
+  .how { padding: .7rem 1.2rem; font-size: .88rem; color: var(--muted); }
+  .how summary { cursor: pointer; color: var(--text); font-weight: 600; }
+  .how ul { margin: .5rem 0 0; padding-left: 1.2rem; line-height: 1.55; }
+  .filters { display: flex; justify-content: space-between; align-items: center; font-size: .88rem; color: var(--muted); padding: 0 .2rem; flex-wrap: wrap; gap: .4rem; }
+  .card { padding: 1rem 1.2rem; }
+  .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
+  .rank { color: var(--muted); font-weight: 700; margin-right: .5rem; }
+  .name { font-size: 1.05rem; font-weight: 700; }
+  .score { text-align: right; min-width: 70px; }
+  .score b { font-size: 1.6rem; color: var(--accent); line-height: 1; }
+  .score small { color: var(--muted); display: block; font-size: .72rem; }
+  .bar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; background: var(--grey-bg); margin: .6rem 0 .3rem; }
+  .bar .s { background: var(--accent); }
+  .bar .e { background: #8b5cf6; }
+  .legend { font-size: .78rem; color: var(--muted); display: flex; gap: 1rem; flex-wrap: wrap; }
+  .legend i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: .3rem; }
+  .row { margin-top: .6rem; font-size: .88rem; display: flex; gap: .4rem; flex-wrap: wrap; align-items: center; }
+  .row .label { color: var(--muted); min-width: 92px; }
+  .chip { padding: .15rem .55rem; border-radius: 999px; font-size: .78rem; }
+  .chip.ok { background: var(--good-bg); color: var(--good); }
+  .chip.miss { background: var(--bad-bg); color: var(--bad); text-decoration: line-through; }
+  .chip.plain { background: var(--grey-bg); color: var(--muted); }
+  .badge { padding: .15rem .6rem; border-radius: 999px; font-size: .75rem; font-weight: 600; }
+  .badge.Immediate { background: var(--good-bg); color: var(--good); }
+  .badge.w2 { background: var(--warn-bg); color: var(--warn); }
+  .badge.Not { background: var(--grey-bg); color: var(--muted); }
+  .exp-ok { color: var(--good); } .exp-short { color: var(--bad); }
+  .quirk { margin-top: .6rem; font-size: .82rem; color: var(--muted); font-style: italic; }
+  .empty { padding: 2rem; text-align: center; color: var(--muted); }
+  .note { font-size: .8rem; color: var(--muted); padding: 0 .2rem; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Recruiter Bot</h1>
+  <p>Pick a job to see the best candidates for it, or pick a candidate to see the best jobs for them.</p>
+</header>
+
+<div class="layout">
+  <aside class="panel side">
+    <div class="tabs">
+      <button id="tab-jobs" class="active">Jobs</button>
+      <button id="tab-candidates">Candidates</button>
+    </div>
+    <ul class="list" id="list"></ul>
+  </aside>
+
+  <main class="main">
+    <section class="panel subject" id="subject"></section>
+    <details class="panel how">
+      <summary>How is the score calculated?</summary>
+      <ul>
+        <li><b>Skills (max 70 points):</b> the share of the job's required skills the candidate has. 2 of 3 skills = 46.7 points.</li>
+        <li><b>Experience (max 30 points):</b> full points if the candidate meets the job's minimum years. Otherwise it scales down (2 yrs vs a 4 yr minimum = half the points). Extra years above the minimum earn nothing more.</li>
+        <li><b>Left out:</b> anyone with no required skill in common is not listed.</li>
+        <li><b>Ties:</b> broken by availability (Immediate first), then more experience.</li>
+        <li><b>Availability</b> is shown but does not change the score.</li>
+      </ul>
+    </details>
+    <div class="filters">
+      <span id="count"></span>
+      <label><input type="checkbox" id="hideNot"> Hide candidates who are "Not looking"</label>
+    </div>
+    <div id="results"></div>
+    <div class="note" id="excluded"></div>
+  </main>
+</div>
+
+<script>
+let mode = "jobs";          // "jobs" = pick a job, see candidates; "candidates" = pick a candidate, see jobs
+let selectedId = null;
+let lastData = null;
+
+const $ = id => document.getElementById(id);
+function esc(s) { const d = document.createElement("div"); d.textContent = s ?? ""; return d.innerHTML; }
+function chips(list, cls) { return list.map(s => `<span class="chip ${cls}">${esc(s)}</span>`).join(""); }
+function badgeClass(a) { return a === "Immediate" ? "Immediate" : a === "2 weeks" ? "w2" : "Not"; }
+
+async function loadList() {
+  const items = await (await fetch("/" + mode)).json();
+  $("list").innerHTML = items.map(i => `
+    <li><button data-id="${i.id}">${esc(i.title || i.name)}
+      <small>${mode === "jobs" ? "needs " + i.min_experience + "+ yrs" : i.experience_years + " yrs · " + esc(i.availability)}</small>
+    </button></li>`).join("");
+  $("list").querySelectorAll("button").forEach(b => b.onclick = () => select(Number(b.dataset.id)));
+  select(items[0].id);
+}
+
+async function select(id) {
+  selectedId = id;
+  $("list").querySelectorAll("button").forEach(b => b.classList.toggle("active", Number(b.dataset.id) === id));
+  lastData = await (await fetch(`/${mode}/${id}/matches`)).json();
+  render();
+}
+
+function renderSubject() {
+  if (mode === "jobs") {
+    const j = lastData.job;
+    $("subject").innerHTML = `
+      <h2>${esc(j.title)}</h2><p class="tag">${esc(j.tagline)}</p>
+      <div class="facts"><span><b>Minimum experience:</b> ${j.min_experience} yrs</span>
+        <span><b>Culture:</b> ${esc(j.culture_keywords)}</span></div>
+      <div class="row"><span class="label">Required skills</span>${chips(j.required_skills, "plain")}</div>`;
+  } else {
+    const c = lastData.candidate;
+    $("subject").innerHTML = `
+      <h2>${esc(c.name)}</h2><p class="tag">${esc(c.quirk)}</p>
+      <div class="facts"><span><b>Experience:</b> ${c.experience_years} yrs</span>
+        <span><b>Availability:</b> ${esc(c.availability)}</span>
+        <span><b>Traits:</b> ${esc(c.traits)}</span></div>
+      <div class="row"><span class="label">Skills</span>${chips(c.skills, "plain")}</div>`;
+  }
+}
+
+function renderCard(m, n) {
+  const jobMode = mode === "jobs";
+  const minExp = jobMode ? lastData.job.min_experience : m.min_experience;
+  const exp = jobMode ? m.experience_years : lastData.candidate.experience_years;
+  const meets = exp >= minExp;
+  const expText = meets ? `${exp} yrs, meets the ${minExp} yr minimum`
+                        : `${exp} yrs, ${minExp - exp} short of the ${minExp} yr minimum`;
+  const avail = jobMode ? m.availability : lastData.candidate.availability;
+  return `
+  <article class="panel card">
+    <div class="top">
+      <div>
+        <div><span class="rank">#${n}</span><span class="name">${esc(jobMode ? m.name : m.title)}</span>
+          ${jobMode ? `<span class="badge ${badgeClass(avail)}">${esc(avail)}</span>` : ""}</div>
+        <div class="quirk">${esc(jobMode ? m.traits : m.tagline)}</div>
+      </div>
+      <div class="score"><b>${m.score}</b><small>out of 100</small></div>
+    </div>
+    <div class="bar" title="Skills ${m.skill_points}/70 + Experience ${m.experience_points}/30">
+      <div class="s" style="width:${m.skill_points}%"></div><div class="e" style="width:${m.experience_points}%"></div>
+    </div>
+    <div class="legend">
+      <span><i style="background:var(--accent)"></i>Skills ${m.skill_points} / 70</span>
+      <span><i style="background:#8b5cf6"></i>Experience ${m.experience_points} / 30</span>
+    </div>
+    <div class="row"><span class="label">Skills matched</span>${chips(m.matched_skills, "ok")}${chips(m.missing_skills, "miss")}</div>
+    <div class="row"><span class="label">Experience</span><span class="${meets ? "exp-ok" : "exp-short"}">${expText}</span></div>
+    ${jobMode ? `<div class="quirk">${esc(m.quirk)}</div>` : `<div class="row"><span class="label">Culture</span>${esc(m.culture_keywords)}</div>`}
+  </article>`;
+}
+
+function render() {
+  renderSubject();
+  let matches = lastData.matches;
+  if (mode === "jobs" && $("hideNot").checked) matches = matches.filter(m => m.availability !== "Not looking");
+  const noun = mode === "jobs" ? "candidates" : "jobs";
+  $("count").textContent = `${matches.length} ${noun} ranked, best first`;
+  $("results").innerHTML = matches.length
+    ? matches.map((m, i) => renderCard(m, i + 1)).join("")
+    : `<div class="panel empty">No ${noun} to show.</div>`;
+  $("excluded").textContent = lastData.excluded_count
+    ? `${lastData.excluded_count} ${noun} share no required skills and are not listed.` : "";
+}
+
+function setMode(m) {
+  mode = m;
+  $("tab-jobs").classList.toggle("active", m === "jobs");
+  $("tab-candidates").classList.toggle("active", m === "candidates");
+  $("hideNot").parentElement.style.visibility = m === "jobs" ? "visible" : "hidden";
+  loadList();
+}
+$("tab-jobs").onclick = () => setMode("jobs");
+$("tab-candidates").onclick = () => setMode("candidates");
+$("hideNot").onchange = render;
+loadList();
+</script>
+</body>
+</html>
